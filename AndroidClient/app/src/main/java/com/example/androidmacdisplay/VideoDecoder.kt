@@ -15,7 +15,7 @@ class VideoDecoder(private val surface: Surface) {
 
     private val bitmapOptions = BitmapFactory.Options().apply {
         inPreferredConfig = android.graphics.Bitmap.Config.RGB_565 // Faster decoding
-        inMutable = false
+        inMutable = true
     }
 
     // Transformation state

@@ -13,8 +13,8 @@ sealed interface ClientState {
 }
 
 class TCPClient(
-    private val host: String, 
-    private val port: Int, 
+    private val host: String,
+    private val port: Int,
     private val onStateChange: (ClientState) -> Unit,
     private val onData: (ByteArray, Int) -> Unit
 ) {
@@ -26,26 +26,31 @@ class TCPClient(
     fun start() {
         if (isRunning.get()) return
         isRunning.set(true)
-        
+
         thread = Thread {
             // 4MB buffer to handle large frames without reallocation
-            val buffer = ByteArray(4 * 1024 * 1024) 
-            
+            val buffer = ByteArray(4 * 1024 * 1024)
+
             while (isRunning.get()) {
                 try {
                     onStateChange(ClientState.Connecting)
-                    
+
                     socket = Socket(host, port)
-                    socket!!.tcpNoDelay = true 
+                    socket!!.tcpNoDelay = true
                     val inputStream: InputStream = socket!!.getInputStream()
                     val headerBuffer = ByteArray(4)
-                    
-                    onStateChange(ClientState.Connected)
-                    
+                    var isConnected = false
+
                     while (isRunning.get()) {
                         readFully(inputStream, headerBuffer)
+
+                        if (!isConnected) {
+                            onStateChange(ClientState.Connected)
+                            isConnected = true
+                        }
+
                         val length = ByteBuffer.wrap(headerBuffer).int
-                        
+
                         if (length > 0) {
                             if (length > buffer.size) {
                                 val temp = ByteArray(length)
@@ -87,7 +92,7 @@ class TCPClient(
             e.printStackTrace()
         }
     }
-    
+
     private fun close() {
         try {
             socket?.close()
