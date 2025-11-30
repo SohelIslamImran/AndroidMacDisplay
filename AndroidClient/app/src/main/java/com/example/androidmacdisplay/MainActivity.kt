@@ -13,6 +13,11 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import android.widget.RadioGroup
 import android.widget.ProgressBar
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
+import android.view.GestureDetector
+import android.graphics.Matrix
+
 
 class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
 
@@ -30,6 +35,15 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
     // Debounce helper
     private val handler = Handler(Looper.getMainLooper())
     private var connectionToastRunnable: Runnable? = null
+
+    // Gesture Detectors
+    private lateinit var scaleGestureDetector: ScaleGestureDetector
+    private lateinit var gestureDetector: GestureDetector
+    
+    // Transformation State
+    private val userMatrix = Matrix()
+    private val matrixValues = FloatArray(9)
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,7 +75,118 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
             showSettings()
         }
         
+        setupGestures()
+        
+        surfaceView.setOnTouchListener { _, event ->
+            scaleGestureDetector.onTouchEvent(event)
+            gestureDetector.onTouchEvent(event)
+            true
+        }
+        
         hideSystemUI()
+    }
+
+    private fun setupGestures() {
+        scaleGestureDetector = ScaleGestureDetector(this, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                val scaleFactor = detector.scaleFactor
+                
+                // Get current scale
+                userMatrix.getValues(matrixValues)
+                val currentScale = matrixValues[Matrix.MSCALE_X]
+                
+                // Clamp min scale to 1.0
+                var effectiveScaleFactor = scaleFactor
+                if (currentScale * effectiveScaleFactor < 1.0f) {
+                    effectiveScaleFactor = 1.0f / currentScale
+                }
+                // Clamp max scale (optional, e.g. 5.0)
+                if (currentScale * effectiveScaleFactor > 5.0f) {
+                    effectiveScaleFactor = 5.0f / currentScale
+                }
+
+                userMatrix.postScale(effectiveScaleFactor, effectiveScaleFactor, detector.focusX, detector.focusY)
+                updateDecoderTransform()
+                return true
+            }
+        })
+
+        gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
+                userMatrix.postTranslate(-distanceX, -distanceY)
+                fixTranslation() // Keep within bounds
+                updateDecoderTransform()
+                return true
+            }
+
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                userMatrix.reset()
+                updateDecoderTransform()
+                return true
+            }
+        })
+    }
+    
+    private fun fixTranslation() {
+        userMatrix.getValues(matrixValues)
+        val scaleX = matrixValues[Matrix.MSCALE_X]
+        val transX = matrixValues[Matrix.MTRANS_X]
+        val transY = matrixValues[Matrix.MTRANS_Y]
+        
+        val viewWidth = surfaceView.width.toFloat()
+        val viewHeight = surfaceView.height.toFloat()
+        
+        // Assuming the content fills the view at scale 1.0
+        val contentWidth = viewWidth * scaleX
+        val contentHeight = viewHeight * scaleX // Assuming uniform scale
+        
+        // Bounds:
+        // transX should be <= 0 (left edge)
+        // transX + contentWidth should be >= viewWidth (right edge)
+        
+        var newTransX = transX
+        var newTransY = transY
+        
+        if (contentWidth <= viewWidth) {
+            // Center horizontally if smaller (shouldn't happen with min scale 1.0)
+            newTransX = (viewWidth - contentWidth) / 2
+        } else {
+            if (newTransX > 0) newTransX = 0f
+            if (newTransX + contentWidth < viewWidth) newTransX = viewWidth - contentWidth
+        }
+        
+        if (contentHeight <= viewHeight) {
+            newTransY = (viewHeight - contentHeight) / 2
+        } else {
+            if (newTransY > 0) newTransY = 0f
+            if (newTransY + contentHeight < viewHeight) newTransY = viewHeight - contentHeight
+        }
+        
+        matrixValues[Matrix.MTRANS_X] = newTransX
+        matrixValues[Matrix.MTRANS_Y] = newTransY
+        userMatrix.setValues(matrixValues)
+    }
+
+    private fun updateDecoderTransform() {
+        userMatrix.getValues(matrixValues)
+        val scale = matrixValues[Matrix.MSCALE_X]
+        val tx = matrixValues[Matrix.MTRANS_X]
+        val ty = matrixValues[Matrix.MTRANS_Y]
+        
+        val viewWidth = surfaceView.width.toFloat()
+        val viewHeight = surfaceView.height.toFloat()
+        
+        // Map View coordinates to Buffer coordinates (1280x720)
+        // This ensures the pan distance matches the finger movement visually
+        if (viewWidth > 0 && viewHeight > 0) {
+             val bufferWidth = 1280f
+             val bufferHeight = 720f
+             
+             val ratioX = bufferWidth / viewWidth
+             val ratioY = bufferHeight / viewHeight
+             
+             videoDecoder?.updateTransform(scale, tx * ratioX, ty * ratioY)
+        }
     }
 
     private fun showSettings() {
@@ -87,12 +212,16 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
     
     private fun updateSurfaceLayout() {
         if (isFillScreen) {
-             surfaceView.scaleX = 1.2f 
-             surfaceView.scaleY = 1.2f
+             // Zoom in slightly to fill/crop
+             userMatrix.reset()
+             val cx = surfaceView.width / 2f
+             val cy = surfaceView.height / 2f
+             userMatrix.postScale(1.2f, 1.2f, cx, cy)
         } else {
-             surfaceView.scaleX = 1.0f
-             surfaceView.scaleY = 1.0f
+             // Reset to fit
+             userMatrix.reset()
         }
+        updateDecoderTransform()
     }
 
     private fun hideSystemUI() {

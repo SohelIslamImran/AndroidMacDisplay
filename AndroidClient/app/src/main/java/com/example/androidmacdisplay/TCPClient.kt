@@ -28,7 +28,8 @@ class TCPClient(
         isRunning.set(true)
         
         thread = Thread {
-            val buffer = ByteArray(1024 * 1024) 
+            // 4MB buffer to handle large frames without reallocation
+            val buffer = ByteArray(4 * 1024 * 1024) 
             
             while (isRunning.get()) {
                 try {
