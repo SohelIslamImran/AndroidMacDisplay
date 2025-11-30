@@ -29,9 +29,11 @@ class VideoEncoder {
         }
         
         VTSessionSetProperty(session!, key: kVTCompressionPropertyKey_RealTime, value: kCFBooleanTrue)
-        VTSessionSetProperty(session!, key: kVTCompressionPropertyKey_ProfileLevel, value: kVTProfileLevel_H264_Main_AutoLevel)
+        VTSessionSetProperty(session!, key: kVTCompressionPropertyKey_ProfileLevel, value: kVTProfileLevel_H264_Baseline_AutoLevel) // Baseline = faster
         VTSessionSetProperty(session!, key: kVTCompressionPropertyKey_AllowFrameReordering, value: kCFBooleanFalse)
-        VTSessionSetProperty(session!, key: kVTCompressionPropertyKey_AverageBitRate, value: 5_000_000 as CFNumber) // 5 Mbps
+        VTSessionSetProperty(session!, key: kVTCompressionPropertyKey_AverageBitRate, value: 8_000_000 as CFNumber) // 8 Mbps
+        VTSessionSetProperty(session!, key: kVTCompressionPropertyKey_MaxKeyFrameInterval, value: 30 as CFNumber) // More keyframes
+        VTSessionSetProperty(session!, key: kVTCompressionPropertyKey_ExpectedFrameRate, value: 30 as CFNumber)
     }
     
     func encode(_ sampleBuffer: CMSampleBuffer) {

@@ -13,7 +13,12 @@ class TCPServer: @unchecked Sendable {
         self.isReady = false
         
         do {
-            listener = try NWListener(using: .tcp, on: port)
+            let parameters = NWParameters.tcp
+            let tcpOptions = parameters.defaultProtocolStack.transportProtocol as! NWProtocolTCP.Options
+            tcpOptions.enableKeepalive = true
+            tcpOptions.noDelay = true
+            
+            listener = try NWListener(using: parameters, on: port)
         } catch {
             print("Failed to create listener: \(error)")
             return false

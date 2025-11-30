@@ -17,13 +17,14 @@ class ScreenCapture: NSObject, SCStreamOutput, @unchecked Sendable {
             
             let filter = SCContentFilter(display: display, excludingApplications: [], exceptingWindows: [])
             
-            let config = SCStreamConfiguration()
-            config.width = display.width
-            config.height = display.height
-            config.minimumFrameInterval = CMTime(value: 1, timescale: 60) // 60 FPS
-            config.queueDepth = 5
+            let streamConfig = SCStreamConfiguration()
+            streamConfig.width = 1280  // Lower resolution = faster encoding
+            streamConfig.height = 720
+            streamConfig.minimumFrameInterval = CMTime(value: 1, timescale: 30) // 30fps
+            streamConfig.queueDepth = 3  // Minimal buffering
+            streamConfig.showsCursor = true
             
-            stream = SCStream(filter: filter, configuration: config, delegate: nil)
+            stream = SCStream(filter: filter, configuration: streamConfig, delegate: nil)
             
             try stream?.addStreamOutput(self, type: .screen, sampleHandlerQueue: .global())
             try await stream?.startCapture()

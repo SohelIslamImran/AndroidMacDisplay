@@ -77,8 +77,8 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
             onStateChange = { connected ->
                 updateStatus(connected)
             },
-            onData = { data ->
-                videoDecoder?.decode(data)
+            onData = { data, length ->
+                videoDecoder?.decode(data, length)
             }
         )
         tcpClient?.start()
