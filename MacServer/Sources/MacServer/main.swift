@@ -19,30 +19,19 @@ if !tcpServer.start() {
 }
 
 // 3. Setup Video Pipeline
-// We need to wait for the screen capture to determine the resolution, or pick a default.
-// For simplicity, let's start capture and setup encoder on the first frame or use a fixed resolution if possible.
-// ScreenCaptureKit gives us the display size.
+var encoder: VideoEncoder?
 
 let screenCapture = ScreenCapture()
-var videoEncoder: VideoEncoder?
-
 screenCapture.onFrame = { sampleBuffer in
-    // Initialize encoder if needed
-    if videoEncoder == nil {
-        if let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
-            let width = Int32(CVPixelBufferGetWidth(imageBuffer))
-            let height = Int32(CVPixelBufferGetHeight(imageBuffer))
-            print("Initializing Encoder: \(width)x\(height)")
-            videoEncoder = VideoEncoder(width: width, height: height)
-            
-            videoEncoder?.onEncodedData = { data in
-                // Send data to clients
-                tcpServer.send(data: data)
-            }
+    // Lazy init encoder (JPEG doesn't need resolution upfront)
+    if encoder == nil {
+        encoder = VideoEncoder()
+        encoder?.onEncodedData = { data in
+            tcpServer.send(data: data)
         }
+        print("JPEG Encoder initialized")
     }
-    
-    videoEncoder?.encode(sampleBuffer)
+    encoder?.encode(sampleBuffer)
 }
 
 // Start Capture
