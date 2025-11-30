@@ -1,0 +1,42 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Swift / SPM
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+
+# Xcode
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+derivedData/
+
+# Android / Gradle
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+*.hprof
+captures/
+.externalNativeBuild
+.cxx/
+*.apk
+*.ap_
+*.dex
+/AndroidClient/app/build/
+
+# JetBrains / Android Studio
+.idea/
+*.iws
+*.iph
+*.ipr
+
+# Misc
+*.log
+tmp/
