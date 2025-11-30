@@ -5,10 +5,17 @@ import java.net.Socket
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicBoolean
 
+sealed interface ClientState {
+    object Disconnected : ClientState
+    object Connecting : ClientState
+    object Connected : ClientState
+    data class Error(val message: String) : ClientState
+}
+
 class TCPClient(
     private val host: String, 
     private val port: Int, 
-    private val onStateChange: (Boolean) -> Unit,
+    private val onStateChange: (ClientState) -> Unit,
     private val onData: (ByteArray, Int) -> Unit
 ) {
 
@@ -21,31 +28,25 @@ class TCPClient(
         isRunning.set(true)
         
         thread = Thread {
-            // Reusable buffer (1MB should be enough for a frame)
             val buffer = ByteArray(1024 * 1024) 
             
             while (isRunning.get()) {
                 try {
+                    onStateChange(ClientState.Connecting)
+                    
                     socket = Socket(host, port)
-                    socket!!.tcpNoDelay = true // Critical for low latency
+                    socket!!.tcpNoDelay = true 
                     val inputStream: InputStream = socket!!.getInputStream()
                     val headerBuffer = ByteArray(4)
                     
-                    // Connected
-                    onStateChange(true)
+                    onStateChange(ClientState.Connected)
                     
                     while (isRunning.get()) {
-                        // Read Length
                         readFully(inputStream, headerBuffer)
                         val length = ByteBuffer.wrap(headerBuffer).int
                         
                         if (length > 0) {
                             if (length > buffer.size) {
-                                // Should rarely happen, but handle it if frame is huge
-                                // For now, just skip or maybe we should resize. 
-                                // 1MB is huge for 1080p H.264 frame (usually < 100KB)
-                                // Let's just read into a temp buffer if it exceeds, or crash.
-                                // Safe bet: just read what we can.
                                 val temp = ByteArray(length)
                                 readFully(inputStream, temp)
                                 onData(temp, length)
@@ -56,11 +57,10 @@ class TCPClient(
                         }
                     }
                 } catch (e: Exception) {
-                    // e.printStackTrace()
-                    // Sleep before retry
-                    try { Thread.sleep(1000) } catch (e: InterruptedException) {}
+                    onStateChange(ClientState.Disconnected)
+                    // Sleep before retry to prevent tight loop spamming
+                    try { Thread.sleep(2000) } catch (e: InterruptedException) {}
                 } finally {
-                    onStateChange(false)
                     close()
                 }
             }
@@ -91,7 +91,7 @@ class TCPClient(
         try {
             socket?.close()
         } catch (e: Exception) {
-            e.printStackTrace()
+            // Ignore
         }
     }
 }

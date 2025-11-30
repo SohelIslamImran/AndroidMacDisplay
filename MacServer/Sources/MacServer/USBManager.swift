@@ -1,42 +1,70 @@
 import Foundation
 
 class USBManager: @unchecked Sendable {
-    private let adbPath = "/opt/homebrew/bin/adb" // Assumption: User has ADB installed via Homebrew. We might need to find it dynamically.
+    
+    private func getADBPath() -> String {
+        let possiblePaths = [
+            "/Users/sohelislamimran/Library/Android/sdk/platform-tools/adb", // User specific
+            "/opt/homebrew/bin/adb",
+            "/usr/local/bin/adb",
+            "/usr/bin/adb"
+        ]
+        
+        for path in possiblePaths {
+            if FileManager.default.fileExists(atPath: path) {
+                return path
+            }
+        }
+        return "adb" // Fallback to PATH look up if absolute paths fail
+    }
+
+    private var monitorTask: Task<Void, Never>?
 
     func startMonitoring() {
         print("Starting USB Monitor...")
-        Task {
-            while true {
+        stopMonitoring() // Cancel existing if any
+        
+        monitorTask = Task {
+            while !Task.isCancelled {
                 if let deviceId = getFirstDevice() {
-                    // We found a device. Let's try to reverse.
-                    // We can optimize this by checking if it's already done, but running it again is harmless and ensures it works.
-                    // To avoid spamming logs, we can check if it changed or just run it.
-                    // For simplicity, let's run it.
+                    // Always re-apply reverse to ensure persistence across unplugs/restarts of ADB
                     runADBReverse(deviceId: deviceId)
                 }
-                try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second check
             }
         }
     }
+    
+    func stopMonitoring() {
+        monitorTask?.cancel()
+        monitorTask = nil
+    }
 
     func startADBReverse() {
-        // Initial check
         if let deviceId = getFirstDevice() {
             runADBReverse(deviceId: deviceId)
         }
     }
     
     private func runADBReverse(deviceId: String) {
+        let adbPath = getADBPath()
         let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        task.arguments = ["adb", "-s", deviceId, "reverse", "tcp:8000", "tcp:8000"]
+        
+        if adbPath == "adb" {
+             task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+             task.arguments = ["adb", "-s", deviceId, "reverse", "tcp:9090", "tcp:9090"]
+        } else {
+             task.executableURL = URL(fileURLWithPath: adbPath)
+             task.arguments = ["-s", deviceId, "reverse", "tcp:9090", "tcp:9090"]
+        }
         
         do {
             try task.run()
             task.waitUntilExit()
-            // Silence success logs to avoid spam in loop
             if task.terminationStatus != 0 {
                 print("ADB Reverse failed for \(deviceId)")
+            } else {
+                print("ADB Reverse success for \(deviceId)")
             }
         } catch {
             print("Failed to run ADB: \(error)")
@@ -48,9 +76,16 @@ class USBManager: @unchecked Sendable {
     }
     
     private func getFirstDevice() -> String? {
+        let adbPath = getADBPath()
         let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        task.arguments = ["adb", "devices"]
+        
+        if adbPath == "adb" {
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+            task.arguments = ["adb", "devices"]
+        } else {
+            task.executableURL = URL(fileURLWithPath: adbPath)
+            task.arguments = ["devices"]
+        }
         
         let pipe = Pipe()
         task.standardOutput = pipe
@@ -63,10 +98,8 @@ class USBManager: @unchecked Sendable {
             if let output = String(data: data, encoding: .utf8) {
                 let lines = output.components(separatedBy: .newlines)
                 for line in lines {
-                    // Skip "List of devices attached" and empty lines
                     if line.contains("List of devices") || line.isEmpty { continue }
                     
-                    // Format: "deviceId\tdevice"
                     let parts = line.components(separatedBy: .whitespaces)
                     if let id = parts.first, !id.isEmpty {
                         return id

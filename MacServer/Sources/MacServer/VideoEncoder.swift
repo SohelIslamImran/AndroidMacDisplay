@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 
 class VideoEncoder {
     var onEncodedData: ((Data) -> Void)?
+    var quality: Double = 0.7
     private let context = CIContext(options: [.useSoftwareRenderer: false]) // Reuse context, use GPU
     
     func encode(_ sampleBuffer: CMSampleBuffer) {
@@ -35,7 +36,7 @@ class VideoEncoder {
         }
         
         let options: [CFString: Any] = [
-            kCGImageDestinationLossyCompressionQuality: 0.7 // Good balance of quality and speed
+            kCGImageDestinationLossyCompressionQuality: quality
         ]
         
         CGImageDestinationAddImage(destination, cgImage, options as CFDictionary)

@@ -33,8 +33,9 @@ class VideoDecoder(private val surface: Surface) {
             val bitmap = BitmapFactory.decodeByteArray(data, 0, length, bitmapOptions) ?: return
             val canvas = surface.lockCanvas(null) ?: return
             
-            // Simple draw - let SurfaceView handle scaling
-            canvas.drawBitmap(bitmap, 0f, 0f, paint)
+            // Draw scaling to canvas size
+            val destRect = android.graphics.Rect(0, 0, canvas.width, canvas.height)
+            canvas.drawBitmap(bitmap, null, destRect, paint)
             
             surface.unlockCanvasAndPost(canvas)
             bitmap.recycle()

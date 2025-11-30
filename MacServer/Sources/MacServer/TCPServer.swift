@@ -2,11 +2,12 @@ import Foundation
 import Network
 
 class TCPServer: @unchecked Sendable {
-    private let port: NWEndpoint.Port = 8000
+    private let port: NWEndpoint.Port = 9090
     private var listener: NWListener?
     private var connections: [NWConnection] = []
     
     private var isReady = false
+    var onNewConnection: (() -> Void)?
 
     func start() -> Bool {
         let semaphore = DispatchSemaphore(value: 0)
@@ -54,7 +55,26 @@ class TCPServer: @unchecked Sendable {
     }
     
     private func handleConnection(_ connection: NWConnection) {
+        print("Handling new connection: \(connection.endpoint)")
         connections.append(connection)
+        
+        connection.stateUpdateHandler = { [weak self] state in
+            switch state {
+            case .ready:
+                print("Connection ready: \(connection.endpoint)")
+                // Connection is fully established, now we can send the initial frame
+                self?.onNewConnection?()
+            case .failed(let error):
+                print("Connection failed: \(error)")
+                self?.removeConnection(connection)
+            case .cancelled:
+                // self?.removeConnection(connection) // Already removed usually
+                break
+            default:
+                break
+            }
+        }
+        
         connection.start(queue: .global())
         
         // Keep reading to detect disconnection
@@ -98,5 +118,16 @@ class TCPServer: @unchecked Sendable {
                 }
             })
         }
+    }
+    
+    func stop() {
+        listener?.cancel()
+        listener = nil
+        for connection in connections {
+            connection.cancel()
+        }
+        connections.removeAll()
+        isReady = false
+        print("Server stopped")
     }
 }
