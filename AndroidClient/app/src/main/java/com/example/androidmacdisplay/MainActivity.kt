@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
 
     private lateinit var surfaceView: SurfaceView
+    private lateinit var statusText: android.widget.TextView
     private var tcpClient: TCPClient? = null
     private var videoDecoder: VideoDecoder? = null
     private var isConnected = false
@@ -18,10 +19,11 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
         setContentView(R.layout.activity_main)
         
         surfaceView = findViewById(R.id.surfaceView)
+        statusText = findViewById(R.id.statusText)
+        
         surfaceView.holder.addCallback(this)
         
         hideSystemUI()
-        showToast("Waiting for connection...")
     }
 
     private fun hideSystemUI() {
@@ -34,6 +36,24 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
     private fun showToast(message: String) {
         runOnUiThread {
             android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun updateStatus(connected: Boolean) {
+        runOnUiThread {
+            if (connected) {
+                if (!isConnected) {
+                    isConnected = true
+                    statusText.visibility = android.view.View.GONE
+                    showToast("Connected")
+                }
+            } else {
+                if (isConnected) {
+                    isConnected = false
+                    statusText.visibility = android.view.View.VISIBLE
+                    showToast("Disconnected")
+                }
+            }
         }
     }
 
@@ -53,16 +73,14 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
         videoDecoder = VideoDecoder(holder.surface)
         videoDecoder?.start()
         
-        tcpClient = TCPClient("127.0.0.1", 8000) { data ->
-            if (data.isEmpty()) {
-                if (!isConnected) {
-                    isConnected = true
-                    showToast("Connected")
-                }
-            } else {
+        tcpClient = TCPClient("127.0.0.1", 8000, 
+            onStateChange = { connected ->
+                updateStatus(connected)
+            },
+            onData = { data ->
                 videoDecoder?.decode(data)
             }
-        }
+        )
         tcpClient?.start()
     }
     

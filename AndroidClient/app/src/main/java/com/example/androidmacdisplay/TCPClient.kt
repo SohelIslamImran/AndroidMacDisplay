@@ -5,7 +5,12 @@ import java.net.Socket
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicBoolean
 
-class TCPClient(private val host: String, private val port: Int, private val onData: (ByteArray) -> Unit) {
+class TCPClient(
+    private val host: String, 
+    private val port: Int, 
+    private val onStateChange: (Boolean) -> Unit,
+    private val onData: (ByteArray) -> Unit
+) {
 
     private var socket: Socket? = null
     private val isRunning = AtomicBoolean(false)
@@ -23,7 +28,7 @@ class TCPClient(private val host: String, private val port: Int, private val onD
                     val headerBuffer = ByteArray(4)
                     
                     // Connected
-                    onData(ByteArray(0)) // Signal connected (empty data)
+                    onStateChange(true)
                     
                     while (isRunning.get()) {
                         // Read Length
@@ -41,6 +46,7 @@ class TCPClient(private val host: String, private val port: Int, private val onD
                     // Sleep before retry
                     try { Thread.sleep(1000) } catch (e: InterruptedException) {}
                 } finally {
+                    onStateChange(false)
                     close()
                 }
             }
