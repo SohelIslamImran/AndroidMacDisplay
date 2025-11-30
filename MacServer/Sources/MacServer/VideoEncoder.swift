@@ -35,7 +35,7 @@ class VideoEncoder {
         }
         
         let options: [CFString: Any] = [
-            kCGImageDestinationLossyCompressionQuality: 0.5 // Lower quality for 60fps
+            kCGImageDestinationLossyCompressionQuality: 0.7 // Good balance of quality and speed
         ]
         
         CGImageDestinationAddImage(destination, cgImage, options as CFDictionary)

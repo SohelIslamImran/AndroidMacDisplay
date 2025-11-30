@@ -18,7 +18,7 @@ class ScreenCapture: NSObject, SCStreamOutput, @unchecked Sendable {
             let filter = SCContentFilter(display: display, excludingApplications: [], exceptingWindows: [])
             
             let streamConfig = SCStreamConfiguration()
-            streamConfig.width = 1280  // Lower resolution = faster encoding
+            streamConfig.width = 1280  // 720p - good balance
             streamConfig.height = 720
             streamConfig.minimumFrameInterval = CMTime(value: 1, timescale: 60) // 60fps for smooth cursor
             streamConfig.queueDepth = 3  // Minimal buffering

@@ -8,13 +8,13 @@ class VideoDecoder(private val surface: Surface) {
 
     private var isRunning = false
     private val paint = Paint().apply {
-        isFilterBitmap = false
-        isAntiAlias = false
+        isFilterBitmap = true  // Enable filtering for smoother scaling
+        isAntiAlias = true     // Better text rendering
         isDither = false
     }
 
     private val bitmapOptions = BitmapFactory.Options().apply {
-        inPreferredConfig = android.graphics.Bitmap.Config.RGB_565
+        inPreferredConfig = android.graphics.Bitmap.Config.RGB_565 // Faster decoding
         inMutable = false
     }
 
