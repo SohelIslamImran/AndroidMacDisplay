@@ -61,7 +61,6 @@ class USBManager: @unchecked Sendable {
             
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             if let output = String(data: data, encoding: .utf8) {
-                print("ADB Devices:\n\(output)")
                 let lines = output.components(separatedBy: .newlines)
                 for line in lines {
                     // Skip "List of devices attached" and empty lines

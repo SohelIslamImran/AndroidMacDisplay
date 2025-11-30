@@ -21,6 +21,8 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
         surfaceView = findViewById(R.id.surfaceView)
         statusText = findViewById(R.id.statusText)
         
+        // Configure surface for scaling
+        surfaceView.holder.setFixedSize(1280, 720) // Match Mac stream resolution
         surfaceView.holder.addCallback(this)
         
         hideSystemUI()

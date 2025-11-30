@@ -7,13 +7,13 @@ import UniformTypeIdentifiers
 
 class VideoEncoder {
     var onEncodedData: ((Data) -> Void)?
+    private let context = CIContext(options: [.useSoftwareRenderer: false]) // Reuse context, use GPU
     
     func encode(_ sampleBuffer: CMSampleBuffer) {
         guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         
         // Convert CVPixelBuffer to CGImage
         let ciImage = CIImage(cvPixelBuffer: imageBuffer)
-        let context = CIContext()
         guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
         
         // Encode as JPEG

@@ -1,13 +1,22 @@
 package com.example.androidmacdisplay
 
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
+import android.graphics.Paint
 import android.view.Surface
 
 class VideoDecoder(private val surface: Surface) {
 
     private var isRunning = false
-    private val canvas: Canvas? = null
+    private val paint = Paint().apply {
+        isFilterBitmap = false
+        isAntiAlias = false
+        isDither = false
+    }
+
+    private val bitmapOptions = BitmapFactory.Options().apply {
+        inPreferredConfig = android.graphics.Bitmap.Config.RGB_565
+        inMutable = false
+    }
 
     fun start() {
         isRunning = true
@@ -21,17 +30,16 @@ class VideoDecoder(private val surface: Surface) {
         if (!isRunning) return
         
         try {
-            // Decode JPEG
-            val bitmap = BitmapFactory.decodeByteArray(data, 0, length) ?: return
+            val bitmap = BitmapFactory.decodeByteArray(data, 0, length, bitmapOptions) ?: return
+            val canvas = surface.lockCanvas(null) ?: return
             
-            // Draw to surface
-            val canvas = surface.lockCanvas(null)
-            canvas?.drawBitmap(bitmap, 0f, 0f, null)
+            // Simple draw - let SurfaceView handle scaling
+            canvas.drawBitmap(bitmap, 0f, 0f, paint)
+            
             surface.unlockCanvasAndPost(canvas)
-            
             bitmap.recycle()
         } catch (e: Exception) {
-            e.printStackTrace()
+            // Silent
         }
     }
 }
