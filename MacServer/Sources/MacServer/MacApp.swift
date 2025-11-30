@@ -4,7 +4,7 @@ import AppKit
 @main
 struct MacApp: App {
     @StateObject private var serverManager = ServerManager()
-    
+
     var body: some Scene {
         MenuBarExtra("MacDisplay", systemImage: "display") {
             ContentView(serverManager: serverManager)
@@ -15,7 +15,7 @@ struct MacApp: App {
 
 struct ContentView: View {
     @ObservedObject var serverManager: ServerManager
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Header - Compact
@@ -23,7 +23,7 @@ struct ContentView: View {
                 Image(systemName: "display")
                     .font(.system(size: 20))
                     .foregroundColor(.blue)
-                
+
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Mac Display")
                         .font(.system(size: 16, weight: .semibold))
@@ -40,72 +40,9 @@ struct ContentView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            
+
             Divider()
-            
-            // Resolution
-            VStack(alignment: .leading, spacing: 6) {
-                Label("Resolution", systemImage: "slider.horizontal.3")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Picker("", selection: $serverManager.selectedResolution) {
-                    ForEach(ServerManager.Resolution.allCases) { resolution in
-                        Text(resolution.rawValue).tag(resolution)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: .infinity)
-                .onChange(of: serverManager.selectedResolution) { newValue in
-                    serverManager.updateResolution(newValue)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            
-            Divider()
-            
-            // Frame Rate - Compact
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Label("Frame Rate", systemImage: "speedometer")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.primary)
-                    Spacer()
-                    Text("\(Int(serverManager.frameRate)) FPS")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                }
-                
-                Slider(value: $serverManager.frameRate, in: 30...120, step: 5)
-                    .controlSize(.small)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            
-            Divider()
-            
-            // Quality - Compact
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Label("Quality", systemImage: "sparkles")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.primary)
-                    Spacer()
-                    Text("\(Int(serverManager.quality * 100))%")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                }
-                
-                Slider(value: $serverManager.quality, in: 0.3...1.0, step: 0.05)
-                    .controlSize(.small)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            
-            Divider()
-            
+
             // USB Connection Status
             HStack {
                 Label("USB Connection", systemImage: "cable.connector")
@@ -124,9 +61,78 @@ struct ContentView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            
+
             Divider()
-            
+
+            // Resolution
+            VStack(alignment: .leading, spacing: 6) {
+                Label("Resolution", systemImage: "slider.horizontal.3")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
+
+                Picker("", selection: $serverManager.selectedResolution) {
+                    ForEach(ServerManager.Resolution.allCases) { resolution in
+                        Text(resolution.rawValue).tag(resolution)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(maxWidth: .infinity)
+                .onChange(of: serverManager.selectedResolution) { newValue in
+                    serverManager.updateResolution(newValue)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+
+            Divider()
+
+            // Frame Rate - Compact
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Label("Frame Rate", systemImage: "speedometer")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Text("\(Int(serverManager.frameRate)) FPS")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+
+                Slider(value: $serverManager.frameRate, in: 30...120, step: 5)
+                    .controlSize(.small)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+
+            Divider()
+
+            // Quality - Compact
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Label("Quality", systemImage: "sparkles")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Text("\(Int(serverManager.quality * 100))%")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+
+                Slider(value: $serverManager.quality, in: 0.3...1.0, step: 0.05)
+                    .controlSize(.small)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+
+            Divider()
+
+            Toggle("Launch at Login", isOn: $serverManager.launchAtLogin)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+
+            Divider()
+
             // Actions - Compact
             VStack(spacing: 6) {
                 Button(action: {
@@ -150,7 +156,7 @@ struct ContentView: View {
                     )
                 }
                 .buttonStyle(.plain)
-                
+
                 Button(action: {
                     NSApplication.shared.terminate(nil)
                 }) {
