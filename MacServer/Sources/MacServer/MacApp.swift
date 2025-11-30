@@ -17,100 +17,143 @@ struct ContentView: View {
     @ObservedObject var serverManager: ServerManager
     
     var body: some View {
-        VStack(spacing: 16) {
-            // Header
-            HStack {
-                Image(systemName: "display.2")
-                    .font(.largeTitle)
-                    .foregroundStyle(.blue)
-                VStack(alignment: .leading) {
-                    Text("MacDisplay")
-                        .font(.headline)
-                    Text(serverManager.isRunning ? "Running" : "Stopped")
-                        .font(.subheadline)
-                        .foregroundStyle(serverManager.isRunning ? .green : .red)
+        VStack(spacing: 0) {
+            // Header - Compact
+            HStack(spacing: 10) {
+                Image(systemName: "display")
+                    .font(.system(size: 20))
+                    .foregroundColor(.blue)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Mac Display")
+                        .font(.system(size: 16, weight: .semibold))
+                    HStack(spacing: 5) {
+                        Circle()
+                            .fill(serverManager.isRunning ? Color.green : Color.gray)
+                            .frame(width: 6, height: 6)
+                        Text(serverManager.isRunning ? "Streaming" : "Stopped")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
                 }
                 Spacer()
             }
-            .padding(.top)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
             
             Divider()
             
-            // Controls
-            VStack(alignment: .leading, spacing: 12) {
-                // Resolution
-                HStack {
-                    Text("Resolution")
-                    Spacer()
-                    Picker("", selection: $serverManager.selectedResolution) {
-                        ForEach(ServerManager.Resolution.allCases) { res in
-                            Text(res.rawValue).tag(res)
+            // Resolution
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Resolution", systemImage: "slider.horizontal.3")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+                
+                HStack(spacing: 6) {
+                    ForEach(ServerManager.Resolution.allCases) { resolution in
+                        Button(action: {
+                            serverManager.selectedResolution = resolution
+                            serverManager.updateResolution(resolution)
+                        }) {
+                            Text(resolution.rawValue)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(serverManager.selectedResolution == resolution ? .white : .primary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(serverManager.selectedResolution == resolution ? Color.blue : Color(nsColor: .controlBackgroundColor))
+                                )
                         }
-                    }
-                    .labelsHidden()
-                    .frame(width: 100)
-                    .onChange(of: serverManager.selectedResolution) { newValue in
-                        serverManager.updateResolution(newValue)
+                        .buttonStyle(.plain)
                     }
                 }
-                
-                // Quality
-                VStack(alignment: .leading) {
-                    HStack {
-                        Text("Quality")
-                        Spacer()
-                        Text("\(Int(serverManager.quality * 100))%")
-                            .foregroundStyle(.secondary)
-                    }
-                    Slider(value: $serverManager.quality, in: 0.1...1.0)
-                }
-                
-                // USB Status
-                HStack {
-                    Text("USB Connection")
-                    Spacer()
-                    if !serverManager.devices.isEmpty {
-                        Text("Connected")
-                            .foregroundStyle(.green)
-                    } else {
-                        Text("No Device")
-                            .foregroundStyle(.orange)
-                    }
-                }
-                
-                Divider()
-                
-                // Settings
-                Toggle("Launch at Login", isOn: $serverManager.launchAtLogin)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
             
             Divider()
             
-            // Actions
-            Button(action: {
-                if serverManager.isRunning {
-                    serverManager.stopServer()
-                } else {
-                    serverManager.startServer()
-                }
-            }) {
+            // Frame Rate - Compact
+            VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Image(systemName: serverManager.isRunning ? "stop.circle.fill" : "play.circle.fill")
-                    Text(serverManager.isRunning ? "Stop Server" : "Start Server")
+                    Label("Frame Rate", systemImage: "speedometer")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(Int(serverManager.frameRate)) FPS")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
+                
+                Slider(value: $serverManager.frameRate, in: 30...120, step: 5)
+                    .controlSize(.small)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(serverManager.isRunning ? .red : .green)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
             
-            Button("Quit") {
-                NSApplication.shared.terminate(nil)
+            Divider()
+            
+            // Quality - Compact
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Label("Quality", systemImage: "sparkles")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(Int(serverManager.quality * 100))%")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                
+                Slider(value: $serverManager.quality, in: 0.3...1.0, step: 0.05)
+                    .controlSize(.small)
             }
-            .keyboardShortcut("q")
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            
+            Divider()
+            
+            // Actions - Compact
+            VStack(spacing: 6) {
+                Button(action: {
+                    if serverManager.isRunning {
+                        serverManager.stopServer()
+                    } else {
+                        serverManager.startServer()
+                    }
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: serverManager.isRunning ? "stop.fill" : "play.fill")
+                        Text(serverManager.isRunning ? "Stop Server" : "Start Server")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(serverManager.isRunning ? Color.red : Color.green)
+                    )
+                }
+                .buttonStyle(.plain)
+                
+                Button(action: {
+                    NSApplication.shared.terminate(nil)
+                }) {
+                    Text("Quit")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
-        .padding()
-        .frame(width: 300)
+        .frame(width: 280)
+        .background(Color(nsColor: .windowBackgroundColor))
         .alert("Error", isPresented: $serverManager.showAlert) {
             if let msg = serverManager.errorMessage, msg.contains("permission") {
                 Button("Open System Settings") {

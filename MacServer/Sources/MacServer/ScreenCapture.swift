@@ -8,10 +8,15 @@ class ScreenCapture: NSObject, SCStreamOutput, @unchecked Sendable {
     
     private var targetWidth: Int = 1280
     private var targetHeight: Int = 720
+    private var targetFPS: Int = 60
     
     func setResolution(width: Int?, height: Int?) {
         self.targetWidth = width ?? 1280
         self.targetHeight = height ?? 720
+    }
+    
+    func setFrameRate(fps: Int) {
+        self.targetFPS = max(30, min(120, fps)) // Clamp between 30-120
     }
     
     func startCapture() async throws {
@@ -48,7 +53,7 @@ class ScreenCapture: NSObject, SCStreamOutput, @unchecked Sendable {
             let streamConfig = SCStreamConfiguration()
             streamConfig.width = targetWidth
             streamConfig.height = targetHeight
-            streamConfig.minimumFrameInterval = CMTime(value: 1, timescale: 60) // 60fps for smooth cursor
+            streamConfig.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(targetFPS))
             streamConfig.queueDepth = 3  // Minimal buffering
             streamConfig.showsCursor = true
             

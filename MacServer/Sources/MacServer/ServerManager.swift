@@ -32,7 +32,8 @@ class ServerManager: ObservableObject {
     }
 
     @Published var selectedResolution: Resolution = .p720
-    @Published var quality: Double = 0.7 {
+    @Published var frameRate: Double = 60 // 30-120 FPS
+    @Published var quality: Double = 0.8 { // Default 80% for balanced performance
         didSet {
             encoder?.quality = quality
         }
@@ -197,6 +198,7 @@ class ServerManager: ObservableObject {
     
     private func setupCapture() {
         screenCapture.setResolution(width: selectedResolution.size?.width, height: selectedResolution.size?.height)
+        screenCapture.setFrameRate(fps: Int(frameRate))
         
         screenCapture.onFrame = { [weak self] sampleBuffer in
             guard let self = self else { return }
