@@ -44,29 +44,21 @@ struct ContentView: View {
             Divider()
             
             // Resolution
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 Label("Resolution", systemImage: "slider.horizontal.3")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
                 
-                HStack(spacing: 6) {
+                Picker("", selection: $serverManager.selectedResolution) {
                     ForEach(ServerManager.Resolution.allCases) { resolution in
-                        Button(action: {
-                            serverManager.selectedResolution = resolution
-                            serverManager.updateResolution(resolution)
-                        }) {
-                            Text(resolution.rawValue)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(serverManager.selectedResolution == resolution ? .white : .primary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 6)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(serverManager.selectedResolution == resolution ? Color.blue : Color(nsColor: .controlBackgroundColor))
-                                )
-                        }
-                        .buttonStyle(.plain)
+                        Text(resolution.rawValue).tag(resolution)
                     }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(maxWidth: .infinity)
+                .onChange(of: serverManager.selectedResolution) { newValue in
+                    serverManager.updateResolution(newValue)
                 }
             }
             .padding(.horizontal, 16)
@@ -78,8 +70,8 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Label("Frame Rate", systemImage: "speedometer")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.primary)
                     Spacer()
                     Text("\(Int(serverManager.frameRate)) FPS")
                         .font(.system(size: 12))
@@ -98,8 +90,8 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Label("Quality", systemImage: "sparkles")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.primary)
                     Spacer()
                     Text("\(Int(serverManager.quality * 100))%")
                         .font(.system(size: 12))
@@ -108,6 +100,27 @@ struct ContentView: View {
                 
                 Slider(value: $serverManager.quality, in: 0.3...1.0, step: 0.05)
                     .controlSize(.small)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            
+            Divider()
+            
+            // USB Connection Status
+            HStack {
+                Label("USB Connection", systemImage: "cable.connector")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
+                Spacer()
+                if !serverManager.devices.isEmpty {
+                    Text("Connected")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.green)
+                } else {
+                    Text("No Device")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.orange)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -142,10 +155,14 @@ struct ContentView: View {
                     NSApplication.shared.terminate(nil)
                 }) {
                     Text("Quit")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.primary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.gray.opacity(0.2))
+                        )
                 }
                 .buttonStyle(.plain)
             }
