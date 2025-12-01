@@ -1,15 +1,14 @@
 import Foundation
 
 class USBManager: @unchecked Sendable {
-    
+
     private func getADBPath() -> String {
         let possiblePaths = [
-            "/Users/sohelislamimran/Library/Android/sdk/platform-tools/adb", // User specific
             "/opt/homebrew/bin/adb",
             "/usr/local/bin/adb",
             "/usr/bin/adb"
         ]
-        
+
         for path in possiblePaths {
             if FileManager.default.fileExists(atPath: path) {
                 return path
@@ -23,7 +22,7 @@ class USBManager: @unchecked Sendable {
     func startMonitoring() {
         print("Starting USB Monitor...")
         stopMonitoring() // Cancel existing if any
-        
+
         monitorTask = Task {
             while !Task.isCancelled {
                 if let deviceId = getFirstDevice() {
@@ -34,7 +33,7 @@ class USBManager: @unchecked Sendable {
             }
         }
     }
-    
+
     func stopMonitoring() {
         monitorTask?.cancel()
         monitorTask = nil
@@ -45,11 +44,11 @@ class USBManager: @unchecked Sendable {
             runADBReverse(deviceId: deviceId)
         }
     }
-    
+
     private func runADBReverse(deviceId: String) {
         let adbPath = getADBPath()
         let task = Process()
-        
+
         if adbPath == "adb" {
              task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
              task.arguments = ["adb", "-s", deviceId, "reverse", "tcp:9090", "tcp:9090"]
@@ -57,7 +56,7 @@ class USBManager: @unchecked Sendable {
              task.executableURL = URL(fileURLWithPath: adbPath)
              task.arguments = ["-s", deviceId, "reverse", "tcp:9090", "tcp:9090"]
         }
-        
+
         do {
             try task.run()
             task.waitUntilExit()
@@ -70,15 +69,15 @@ class USBManager: @unchecked Sendable {
             print("Failed to run ADB: \(error)")
         }
     }
-    
+
     func checkDevices() -> Bool {
         return getFirstDevice() != nil
     }
-    
+
     private func getFirstDevice() -> String? {
         let adbPath = getADBPath()
         let task = Process()
-        
+
         if adbPath == "adb" {
             task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
             task.arguments = ["adb", "devices"]
@@ -86,20 +85,20 @@ class USBManager: @unchecked Sendable {
             task.executableURL = URL(fileURLWithPath: adbPath)
             task.arguments = ["devices"]
         }
-        
+
         let pipe = Pipe()
         task.standardOutput = pipe
-        
+
         do {
             try task.run()
             task.waitUntilExit()
-            
+
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             if let output = String(data: data, encoding: .utf8) {
                 let lines = output.components(separatedBy: .newlines)
                 for line in lines {
                     if line.contains("List of devices") || line.isEmpty { continue }
-                    
+
                     let parts = line.components(separatedBy: .whitespaces)
                     if let id = parts.first, !id.isEmpty {
                         return id

@@ -3,6 +3,10 @@
 # Ensure we are in the script's directory (MacServer/)
 cd "$(dirname "$0")"
 
+# Version parameters (can be passed via environment variables)
+SHORT_VERSION="${SHORT_VERSION:-1.0}"
+BUILD_VERSION="${BUILD_VERSION:-1}"
+
 APP_NAME="MacDisplay"
 INSTALL_PATH="/Applications"
 BUILD_DIR=".build/release"
@@ -42,9 +46,11 @@ cat > "$CONTENTS/Info.plist" <<EOF
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
+    <string>$SHORT_VERSION</string>
+    <key>CFBundleVersion</key>
+    <string>$BUILD_VERSION</string>
     <key>LSUIElement</key>
-    <true/> 
+    <true/>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSScreenCaptureUsageDescription</key>
@@ -62,34 +68,4 @@ xattr -cr "$APP_BUNDLE"
 echo "Signing app..."
 codesign --force --deep --sign - "$APP_BUNDLE"
 
-# Reset permissions for this app (Clean slate)
-tccutil reset ScreenCapture com.sohel.MacDisplay 2>/dev/null
-
-# Note: LSUIElement=true makes it a pure agent app (no dock icon), which is good for menu bar apps.
-
 echo "App created at $APP_BUNDLE"
-
-# Move to /Applications
-echo "Moving $APP_BUNDLE to $INSTALL_PATH..."
-# User might need to enter password if they don't have write access to /Applications
-if sudo mv -f "$APP_BUNDLE" "$INSTALL_PATH/"; then
-    echo "Successfully moved to $INSTALL_PATH/$APP_BUNDLE"
-    
-    # Fix ownership to the current user (sudo mv makes it root:wheel)
-    USER_ID=$(id -u)
-    GROUP_ID=$(id -g)
-    echo "Fixing ownership to $USER_ID:$GROUP_ID..."
-    sudo chown -R $USER_ID:$GROUP_ID "$INSTALL_PATH/$APP_BUNDLE"
-    
-    # Force register with Launch Services
-    echo "Registering with Launch Services..."
-    /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$INSTALL_PATH/$APP_BUNDLE"
-    
-    # Open the app
-    echo "Opening $APP_NAME..."
-    open "$INSTALL_PATH/$APP_BUNDLE"
-else
-    echo "Failed to move app to $INSTALL_PATH. You might need to run the script with 'sudo' or move it manually."
-    echo "App bundle is available at $(pwd)/$APP_BUNDLE"
-fi
-
