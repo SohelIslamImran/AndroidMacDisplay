@@ -4,6 +4,7 @@ class USBManager: @unchecked Sendable {
 
     private func getADBPath() -> String {
         let possiblePaths = [
+            "/Library/Android/sdk/platform-tools/adb",
             "/opt/homebrew/bin/adb",
             "/usr/local/bin/adb",
             "/usr/bin/adb"
